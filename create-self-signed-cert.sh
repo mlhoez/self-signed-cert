@@ -69,6 +69,11 @@ if [[ "${#domains[@]}" -eq 0 && "${#ips[@]}" -eq 0 ]]; then
     exit 0
 fi
 
+while [[ -z "$cn" ]]; do
+    read -p "Provide the Common Name (CN): " cn
+done
+
+
 # Generate self-signed certificate and private key
 openssl \
     req \
@@ -80,7 +85,7 @@ openssl \
     -nodes \
     -keyout self-signed.key \
     -out self-signed.crt \
-    -subj "/CN=localhost" \
+    -subj "/CN=${cn}" \
     -addext "keyUsage=digitalSignature,keyEncipherment,keyCertSign" \
     -addext "extendedKeyUsage=serverAuth,clientAuth" \
     -addext "subjectAltName=${san_input}" \
@@ -104,7 +109,7 @@ while true; do
             echo "|                          BEGIN OUTPUT OF: self-signed.crt                         |"
             echo "-------------------------------------------------------------------------------------"
             echo -e "\n"
-            openssl x509 -in localhost.test.crt -text -noout;
+            openssl x509 -in self-signed.crt -text -noout;
             echo -e "\n"
             echo "-------------------------------------------------------------------------------------"
             echo "|                           END OUTPUT OF: self-signed.crt                          |"                        
@@ -119,7 +124,7 @@ done
 # Add the certificate as a trusted root certificate authority in the Keychain
 echo -e "\nPlease enter your password to install and trust the root certificate authority in the Keychain."
 echo "Note: you might be asked for it twice (ctrl+c to skip and install manually)."
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.test.crt
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain self-signed.crt
 
 exit_code=$?
 if [[ $exit_code -eq 0 ]]; then

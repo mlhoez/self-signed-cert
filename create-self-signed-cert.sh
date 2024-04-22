@@ -42,12 +42,19 @@ echo "Enter Subject Alternative Name (SAN) domains (each separated by a space):"
 echo "Example: 'localhost *.localhost' or leave blank and hit Enter to skip"
 read -a domains 
 
+main_domain=""
+
 ITER=0
 for i in ${domains[@]}; do
     if [[ $ITER -ne 0 ]]; then
         san_input="${san_input},"
     fi
     san_input="${san_input}DNS:${i}"
+
+    if [[ -z "$main_domain" ]]; then
+        main_domain=$i
+    fi
+
     ((ITER++))
 done
 
@@ -61,6 +68,11 @@ for i in ${ips[@]}; do
         san_input="${san_input},"
     fi
     san_input="${san_input}IP:${i}"
+
+    if [[ -z "$main_domain" ]]; then
+        main_domain=$i
+    fi
+
     ((ITER++))
 done
 
@@ -85,7 +97,7 @@ openssl \
     -nodes \
     -keyout self-signed.key \
     -out self-signed.crt \
-    -subj "/CN=${cn}" \
+    -subj "/CN=${cn} @ ${main_domain}" \
     -addext "keyUsage=digitalSignature,keyEncipherment,keyCertSign" \
     -addext "extendedKeyUsage=serverAuth,clientAuth" \
     -addext "subjectAltName=${san_input}" \
